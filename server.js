@@ -23,11 +23,7 @@ server.get("/", (req, res) => {
 //custom middleware
 
 function logger(req, res, next) {
-   console.log(
-      `[${new Date().toISOString()}] ${req.method} to ${req.url} from ${req.get(
-         "Origin"
-      )}`
-   );
+   console.log(`${req.method} request to ${req.url} at ${new Date().toISOString()}`);
    next();
 }
 
