@@ -23,7 +23,7 @@ server.get("/", (req, res) => {
 //custom middleware
 
 function logger(req, res, next) {
-   console.log(`${req.method} request to ${req.url} at ${new Date().toISOString()}`);
+   console.log(`${req.method} request to ${req.url} at ${new Date().toISOString()} from ${req.get('Host')}`);
    next();
 }
 
