@@ -16,7 +16,7 @@ router.post("/", (req, res) => {
         });
 });
 
-router.post("/:id/posts", (req, res) => {
+router.post("/:id/posts", validatePost, (req, res) => {
     const post = {
         text: req.body.text,
         user_id: req.params.id,
@@ -43,7 +43,7 @@ router.get("/", (req, res) => {
         });
 });
 
-router.get("/:id", validateUserId, (req, res) => {
+router.get("/:id", (req, res) => {
     Users.getById(req.params.id)
         .then((user) => {
             res.status(201).json(user);
@@ -82,7 +82,10 @@ router.delete("/:id", (req, res) => {
 router.put("/:id", (req, res) => {
     Users.update(req.params.id, req.body)
         .then((user) => {
-            res.status(201).json(user);
+            Users.getById(req.params.id).then((user) => {
+                res.status(200).json(user);
+            });
+            // res.status(201).json(user);
         })
         .catch((error) => {
             console.log(error.message);
@@ -96,7 +99,7 @@ function validateUserId(req, res, next) {
     if (!req.body) {
         res.status(400).json({ message: "missing user data" });
     }
-    if (!req.body.name) {
+    if (!req.params.id) {
         res.status(400).json({ message: "missing required name field" });
     }
     next();
@@ -107,7 +110,15 @@ function validateUser(req, res, next) {
 }
 
 function validatePost(req, res, next) {
-    // do your magic!
+    if (req.body && Object.keys(req.body).length > 0) {
+        next();
+    }
+    if (!req.body) {
+        next({ code: 400, message: "missing post data" });
+    }
+    if (!req.body.text) {
+        next({ code: 400, message: "missing required text field" });
+    }
 }
 
 module.exports = router;
