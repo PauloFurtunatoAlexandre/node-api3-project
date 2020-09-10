@@ -5,15 +5,12 @@ const router = express.Router();
 const Users = require("./userDb.js");
 const Posts = require("../posts/postDb.js");
 
-router.post("/", (req, res) => {
+router.post("/", validateUser, (req, res) => {
     Users.insert(req.body)
         .then((user) => {
             res.status(201).json(user);
         })
-        .catch((error) => {
-            console.error(error);
-            next(error);
-        });
+        .catch((err) => res.status(500).json({ message: "Database error." }));
 });
 
 router.post("/:id/posts", validatePost, (req, res) => {
@@ -43,70 +40,79 @@ router.get("/", (req, res) => {
         });
 });
 
-router.get("/:id", (req, res) => {
-    Users.getById(req.params.id)
-        .then((user) => {
+router.get("/:id", validateUserId, (req, res) => {
+    Users.getById(req.params.id).then((user) => {
+        if (user) {
             res.status(201).json(user);
-        })
-        .catch(() => {
-            res.status(500).json({
+        } else {
+            next({
+                code: 500,
                 message:
                     "There was an error fetching the user from the database",
             });
-        });
+        }
+    });
 });
 
-router.get("/:id/posts", (req, res) => {
-    Users.getUserPosts(req.params.id)
-        .then((posts) => {
+router.get("/:id/posts", validateUserId, (req, res) => {
+    Users.getUserPosts(req.params.id).then((posts) => {
+        if (posts) {
             res.status(200).json(posts);
-        })
-        .catch((error) => {
-            console.log(error);
-            next(error);
-        });
+        } else {
+            next({ code: 400, message: "Could not fetch the posts." });
+        }
+    });
 });
 
-router.delete("/:id", (req, res) => {
-    Users.remove(req.params.id)
-        .then((user) => {
-            console.log(user);
-            res.status(200).json(user);
-        })
-        .catch((error) => {
-            console.log(error.message);
-            next(error.message);
-        });
-});
-
-router.put("/:id", (req, res) => {
-    Users.update(req.params.id, req.body)
-        .then((user) => {
-            Users.getById(req.params.id).then((user) => {
-                res.status(200).json(user);
+router.delete("/:id", validateUserId, (req, res) => {
+    Users.remove(req.params.id).then((user) => {
+        if (user) {
+            res.status(200).json({
+                message: `User ${req.params.id} has been deleted successfully.`,
             });
-            // res.status(201).json(user);
-        })
-        .catch((error) => {
-            console.log(error.message);
-            res.status(404).json(error.message);
-        });
+        } else {
+            next({ code: 400, message: "User not found." });
+        }
+    });
+});
+
+router.put("/:id", validateUserId, (req, res) => {
+    Users.update(req.params.id, req.body).then((user) => {
+        if (user) {
+            res.status(200).json({
+                message: `User ${req.params.id} has been changed successfully.`,
+            });
+        } else {
+            next({
+                code: 404,
+                message: "Could not find the user to apply the changes.",
+            });
+        }
+    });
 });
 
 //custom middleware
 
 function validateUserId(req, res, next) {
-    if (!req.body) {
-        res.status(400).json({ message: "missing user data" });
-    }
-    if (!req.params.id) {
-        res.status(400).json({ message: "missing required name field" });
-    }
-    next();
+    Users.getById(req.params.id)
+        .then((user) => {
+            if (user) {
+                next();
+            } else {
+                res.status({ code: 400, message: "invalid user id" });
+            }
+        })
+        .catch((error) => {
+            res.status(500).json({ message: "server error, try again later." });
+        });
 }
 
 function validateUser(req, res, next) {
-    // do your magic!
+    if (req.body && Object.keys(req.body).length > 0) {
+        next();
+    } else {
+        next({ message: "missing user data" });
+    }
 }
 
 function validatePost(req, res, next) {

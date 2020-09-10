@@ -11,9 +11,9 @@ server.use(express.json());
 // server.use(morgan("dev"));
 server.use(logger);
 
-// server.use((error, req, res, next) => {
-//    res.status(error.code).json({ error });
-// });
+server.use((error, req, res, next) => {
+   res.status(error.code).json({ error });
+});
 
 server.use("/api/posts", postRouter);
 server.use("/api/users", userRouter);
